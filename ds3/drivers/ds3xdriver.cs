@@ -173,7 +173,7 @@ namespace ds2xdriver
     static string[] input_parm_names = new string[] {"config_file", "target", "n_threads", "ramp_rate",
       "run_time", "db_size", "warmup_time", "think_time", "pct_newcustomers", "pct_newmember", "n_searches",
       "search_batch_size", "n_reviews", "pct_newreviews", "pct_newhelpfulness", "n_line_items", "virt_dir", 
-      "page_type", "windows_perf_host", "linux_perf_host", "detailed_view", "out_filename", "ds2_mode"};
+      "page_type", "windows_perf_host", "linux_perf_host", "detailed_view", "out_filename", "ds2_mode", "log_freq"};
     static string[] input_parm_desc = new string[] {"config file path", 
       "database/web server hostname or IP address", "number of driver threads", "startup rate (users/sec)",
       "run time (min) - 0 is infinite", "S | M | L or database size (e.g. 30MB, 80GB)", "warmup_time (min)", "think time (sec)", 
@@ -183,9 +183,9 @@ namespace ds2xdriver
       "percent of orders where customer will rate an existing review for its helpfulness", "average number of items per order",
       "virtual directory (for web driver)", "web page type (for web driver)", "target hostname for Perfmon CPU% display (Windows only)",
       "username:password:target hostname/IP Address for Linux CPU% display (Linux Only)",
-      "Detailed statistics View (Y / N)", "output results to specified file in csv format", "run driver in ds2 mode to mimic previous version"};
+      "Detailed statistics View (Y / N)", "output results to specified file in csv format", "run driver in ds2 mode to mimic previous version", "print output frequency in seconds"};
     static string[] input_parm_values = new string[] {"none", "localhost", "1", "10", "0", "10MB", "1", "0",
-      "20", "1", "3", "5", "3", "5", "10", "5", "ds3", "php", "","","N","","N"};
+      "20", "1", "3", "5", "3", "5", "10", "5", "ds3", "php", "","","N","","N", "1"};
 
     int server_id = 0;          //Added by GSK
     
@@ -404,7 +404,7 @@ namespace ds2xdriver
 
       int i;
             int z;
-      int i_sec , run_time = 0 , warmup_time = 1;
+      int i_sec , run_time = 0 , warmup_time = 1, log_freq = 1;
       //Changed by GSK
       //int db_size=0;
       //string db_size_str, errmsg=null;
@@ -629,23 +629,31 @@ namespace ds2xdriver
         Console.WriteLine ( "Error in converting parameter run_time: {0}" , e.Message );
         return;
         }
+      try
+        {
+        log_freq = Convert.ToInt32(input_parm_values[Array.IndexOf(input_parm_names, "log_freq")]);
+        }
+        catch (System.Exception e)
+        {
+        Console.WriteLine("Error in converting parameter log_freq: {0}", e.Message);
+        return;
+        }
 
-
-      //db_size_str = input_parm_values[Array.IndexOf(input_parm_names, "db_size_str")];
+            //db_size_str = input_parm_values[Array.IndexOf(input_parm_names, "db_size_str")];
 
             //Changed by GSK
-      //This parameter db_size_str will not be used in case of Custom database size since CalculateNumberOfRows() calculates rows in tables 
-      //on the fly according to database size passed as parameter            
-      //string sizes= "SML";
-      //if ((db_size = sizes.IndexOf(db_size_str.ToUpper())) < 0)
-      //  {
-      //      Console.WriteLine("Error: db_size_str must be one of S, M or L");
-      //      return;
-      //  }
+            //This parameter db_size_str will not be used in case of Custom database size since CalculateNumberOfRows() calculates rows in tables 
+            //on the fly according to database size passed as parameter            
+            //string sizes= "SML";
+            //if ((db_size = sizes.IndexOf(db_size_str.ToUpper())) < 0)
+            //  {
+            //      Console.WriteLine("Error: db_size_str must be one of S, M or L");
+            //      return;
+            //  }
 
-      //Code for new parameter and new function to initialize number of rows 
-      //Added by GSK
-      db_size = input_parm_values[Array.IndexOf ( input_parm_names , "db_size" )];
+            //Code for new parameter and new function to initialize number of rows 
+            //Added by GSK
+            db_size = input_parm_values[Array.IndexOf ( input_parm_names , "db_size" )];
       if ( db_size == "" )
         {
         Console.WriteLine ( "Error: Wrong db_size parameter value specified" );
@@ -917,10 +925,10 @@ namespace ds2xdriver
       Console.WriteLine ( "target= {0}  n_threads= {1}  ramp_rate= {2}  run_time= {3}  db_size= {4}" +
         "  warmup_time= {5}  think_time= {6} pct_newcustomers= {7} pct_newmembers= {8}  n_searches= {9}  search_batch_size= {10}" +
         "  n_reviews={11} pct_newreviews={12} pct_newhelpfulness={13} n_line_items{14} virt_dir= {15}" +
-        "  page_type= {16}  windows_perf_host= {17} detailed_view= {18} linux_perf_host= {19} output_file= {20} ds2_mode= {21}" ,
+        "  page_type= {16}  windows_perf_host= {17} detailed_view= {18} linux_perf_host= {19} output_file= {20} ds2_mode= {21} log_freq= {22}" ,
         target , n_threads , ramp_rate , run_time , db_size , warmup_time , think_time , pct_newcustomers ,
             pct_newmember, n_searches , search_batch_size , n_reviews, pct_newreviews, pct_newhelpfulness,
-            n_line_items , virt_dir , page_type , windows_perf_host , detailed_view , linux_perf_host, outfilename, ds2_mode_string );
+            n_line_items , virt_dir , page_type , windows_perf_host , detailed_view , linux_perf_host, outfilename, ds2_mode_string, log_freq);
 
 #if (USE_WIN32_TIMER)
       Console.WriteLine("\nUsing WIN32 QueryPerformanceCounters for measuring response time\n");
@@ -1122,7 +1130,7 @@ namespace ds2xdriver
       for ( i_sec = 1 ; i_sec <= run_time * 60 ; i_sec++ ) // run for run_time*60 seconds
         {          
         //Call plink to execute mpstat on remote linux machine to store CPU data in File on remote system
-        if (i_sec % 1 == 1)  //At start of every 1 second interval, start background process for mpstat CPU monitoring on each linux machine
+        if (i_sec % log_freq == 1)  //At start of every 1 second interval, start background process for mpstat CPU monitoring on each linux machine
           {
           if (linux_perf_host != null)     //Added by GSK for getting Linux CPU Utilization
             {
@@ -1189,7 +1197,7 @@ namespace ds2xdriver
 #endif               
                 
 
-        if ( i_sec % 1 == 0 ) // print out stats every 1 seconds
+        if ( i_sec % log_freq == 0 ) // print out stats every 1 seconds
           {
           //rt_login_avg_msec = (int) Math.Floor(1000*rt_login_overall/n_login_overall);
           //rt_newcust_avg_msec = (int) Math.Floor(1000*rt_newcust_overall/n_newcust_overall);
