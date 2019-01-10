@@ -245,7 +245,7 @@ namespace ds2xdriver
         //These arguments will ensure than yes = y will automatically be answered
         // -l root -pw password 11.22.33.44 exit
         //Submit background task to write mpstat output for 10 seconds to a file
-        string p_args = " -l " + user + " -pw " + passwd + " " + machine_name + " cd /; nohup mpstat 1 10 > /cpuutil.txt 2> /cpuutil.err < /dev/null &";
+        string p_args = " -l " + user + " -pw " + passwd + " " + machine_name + " cd /; nohup mpstat 1 1 > /cpuutil.txt 2> /cpuutil.err < /dev/null &";
         p.StartInfo.UseShellExecute = false;
         p.StartInfo.RedirectStandardInput = false;
         p.StartInfo.RedirectStandardOutput = true;
@@ -1122,7 +1122,7 @@ namespace ds2xdriver
       for ( i_sec = 1 ; i_sec <= run_time * 60 ; i_sec++ ) // run for run_time*60 seconds
         {          
         //Call plink to execute mpstat on remote linux machine to store CPU data in File on remote system
-        if (i_sec % 10 == 1)  //At start of every 10 second interval, start background process for mpstat CPU monitoring on each linux machine
+        if (i_sec % 1 == 1)  //At start of every 10 second interval, start background process for mpstat CPU monitoring on each linux machine
           {
           if (linux_perf_host != null)     //Added by GSK for getting Linux CPU Utilization
             {
@@ -1189,7 +1189,7 @@ namespace ds2xdriver
 #endif               
                 
 
-        if ( i_sec % 10 == 0 ) // print out stats every 10 seconds
+        if ( i_sec % 1 == 0 ) // print out stats every 10 seconds
           {
           //rt_login_avg_msec = (int) Math.Floor(1000*rt_login_overall/n_login_overall);
           //rt_newcust_avg_msec = (int) Math.Floor(1000*rt_newcust_overall/n_newcust_overall);
@@ -1237,16 +1237,16 @@ namespace ds2xdriver
           //  "rollbacks: n={5} %={6,5:F1}  ", et, n_overall, opm, rt_tot_lastn_max_msec, rt_tot_avg_msec, n_rollbacks_overall,
           //  (100.0 * n_rollbacks_overall) / n_overall);
           //Changed on 8/8/2010
-          Console.WriteLine("et={0,7:F1} n_overall={1} opm={2} rt_tot_lastn_max_msec={3} rt_tot_avg_msec={4} " +
+          Console.WriteLine("TimeStamp ({8}): et={0,7:F1} n_overall={1} opm={2} rt_tot_lastn_max_msec={3} rt_tot_avg_msec={4} " +
             "rt_tot_sampled={5} " +
             "rollbacks: n={6} %={7,5:F1} ", et, n_overall, opm, rt_tot_lastn_max_msec, rt_tot_avg_msec,
             rt_tot_sampled,
-            n_rollbacks_overall,pct_rollbacks                      
+            n_rollbacks_overall,pct_rollbacks,DateTime.Now                      
             );
             if (outfilename != null)
               {
-               outfile.WriteLine("{0,7:F1},{1},{2},{3},{4},{5},{6},{7,5:F1}", et, n_overall, opm, rt_tot_lastn_max_msec, rt_tot_avg_msec,
-              rt_tot_sampled, n_rollbacks_overall, pct_rollbacks); 
+               outfile.WriteLine("TimeStamp ({8}): {0,7:F1},{1},{2},{3},{4},{5},{6},{7,5:F1}", et, n_overall, opm, rt_tot_lastn_max_msec, rt_tot_avg_msec,
+              rt_tot_sampled, n_rollbacks_overall, pct_rollbacks,DateTime.Now); 
               }
 
           total_cpu_utilzn = 0.0;
